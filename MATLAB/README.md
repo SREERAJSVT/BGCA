@@ -1,4 +1,3 @@
-![image](https://github.com/user-attachments/assets/da111976-ed37-4ff9-9867-c013ec6e0366)
 WebAPP
 ![image](https://github.com/user-attachments/assets/908de88e-996f-48a2-a8dd-0fa431e46560)
 MATLAB OutPut
