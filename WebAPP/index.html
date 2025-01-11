@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Blood Glucose Calculator</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    body {
+        font-family: sans-serif;
+        background-color: #f4f4f4; /* Light background */
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh; /* Ensure full viewport height */
+        #container { width: 80%; margin: 20px auto; }
+
+    }
+    
+    #container {
+        width: 90%;
+        max-width: 900px; /* Set a maximum width */
+        margin: 20px auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+        flex-grow: 1; /* Allow container to take up available space */
+    }
+    
+    h1 {
+        color: #333;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    th, td {
+        border: 1px solid #ddd;
+        padding: 10px;
+        text-align: center;
+        transition: background-color 0.3s; /* Smooth transition for hover */
+    }
+    
+    th {
+        background-color: #f0f0f0;
+        font-weight: bold;
+    }
+    
+    tr:hover {
+        background-color: #f5f5f5; /* Light hover background */
+    }
+    
+    input[type="number"], select {
+        width: calc(100% - 16px); /* Account for padding */
+        padding: 8px;
+        box-sizing: border-box;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        transition: border-color 0.3s;
+    }
+    
+    input[type="number"]:focus, select:focus {
+        border-color: #4CAF50; /* Green focus border */
+        outline: none;
+        box-shadow: 0 0 5px rgba(76, 175, 80, 0.2); /* Subtle focus shadow */
+    }
+    
+    button {
+        background-color: #4CAF50; /* Green */
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 10px auto; /* Center the button */
+        cursor: pointer;
+        border-radius: 4px;
+        transition: background-color 0.3s, transform 0.2s;
+        display: block; /* Make button full width */
+    }
+    
+    button:hover {
+        background-color: #45a049; /* Darker green on hover */
+        transform: scale(1.02);
+    }
+    
+    button:active {
+        transform: scale(0.98);
+    }
+    
+    canvas {
+        max-width: 100%; /* Make the canvas responsive */
+    }
+    </style>
+</head>
+<body>
+
+<div id="container">
+  <h1>Blood Glucose Calculator</h1>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Parameter</th>
+        <th>Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>G (Initial Glucose)</td>
+        <td><input type="number" id="G" value="140"> mg/dl</td>
+      </tr>
+      <tr>
+        <td>V (Volume)</td>
+        <td><input type="number" id="V" value="194.4"> dl</td>
+      </tr>
+      <tr>
+        <td>α (Alpha - No Activity)</td>
+        <td><input type="number" id="alpha_no" value="0.009" step="0.001"></td>
+      </tr>
+        <tr>
+        <td>α (Alpha - With Activity)</td>
+        <td><input type="number" id="alpha_yes" value="0.015" step="0.001"></td>
+      </tr>
+      <tr>
+        <td>ω (Omega)</td>
+        <td><input type="number" id="omega" value="0.008" step="0.001"></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Food</th>
+        <th>extG (mg/dl)</th>
+        <th>b</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Whole Wheat Bread</td>
+        <td><input type="number" id="wwb_extG" value="295"></td>
+        <td><input type="number" id="wwb_b" value="1.223782" step="0.000001"></td>
+      </tr>
+      <tr>
+        <td>Brown Rice</td>
+        <td><input type="number" id="br_extG" value="295"></td>
+        <td><input type="number" id="br_b" value="1.223782" step="0.000001"></td>
+      </tr>
+      <tr>
+        <td>Black Beans</td>
+        <td><input type="number" id="bb_extG" value="215"></td>
+        <td><input type="number" id="bb_b" value="0.891909" step="0.000001"></td>
+      </tr>
+      <tr>
+        <td>Lentils</td>
+        <td><input type="number" id="l_extG" value="210"></td>
+        <td><input type="number" id="l_b" value="0.871167" step="0.000001"></td>
+      </tr>
+      <tr>
+        <td>Oatmeal</td>
+        <td><input type="number" id="o_extG" value="205"></td>
+        <td><input type="number" id="o_b" value="0.850425" step="0.000001"></td>
+      </tr>
+    </tbody>
+  </table>
+    <label for="activity">Physical Activity:</label>
+  <select id="activity">
+    <option value="no">No</option>
+    <option value="yes">Yes</option>
+  </select><br><br>
+
+  <button onclick="calculateAndPlot()">Simulate</button>
+
+  <canvas id="myChart"></canvas>
+</div>
+
+<script>
+    let myChart; // Declare the chart variable globally
+
+function calculateAndPlot() {
+  const G = parseFloat(document.getElementById("G").value);
+  const V = parseFloat(document.getElementById("V").value);
+  const omega = parseFloat(document.getElementById("omega").value);
+    const activity = document.getElementById("activity").value;
+
+  const alpha = (activity === "yes") ? parseFloat(document.getElementById("alpha_yes").value) : parseFloat(document.getElementById("alpha_no").value);
+
+
+  const foodData = {
+    "Whole Wheat Bread": { extG: parseFloat(document.getElementById("wwb_extG").value), b: parseFloat(document.getElementById("wwb_b").value), color: 'blue' },
+    "Brown Rice": { extG: parseFloat(document.getElementById("br_extG").value), b: parseFloat(document.getElementById("br_b").value), color: 'skyblue' },
+    "Black Beans": { extG: parseFloat(document.getElementById("bb_extG").value), b: parseFloat(document.getElementById("bb_b").value), color: 'red' },
+    "Lentils": { extG: parseFloat(document.getElementById("l_extG").value), b: parseFloat(document.getElementById("l_b").value), color: 'green' },
+    "Oatmeal": { extG: parseFloat(document.getElementById("o_extG").value), b: parseFloat(document.getElementById("o_b").value), color: 'purple' }
+  };
+
+  const time = [0, 100, 200, 300];
+  const datasets = [];
+
+  for (const food in foodData) {
+    const { extG, b, color } = foodData[food];
+    const glucose = [];
+    for (let t of time) {
+      let g = G + b * (extG - G) * (1 - Math.exp(-alpha * t)) * Math.exp(-omega * t);
+      glucose.push(g);
+    }
+    datasets.push({
+      label: food,
+      data: glucose,
+      borderColor: color,
+      borderWidth: 1,
+      tension: 0.4
+    });
+  }
+
+  const ctx = document.getElementById('myChart').getContext('2d');
+  if (myChart) { // Check if a chart instance exists
+    myChart.destroy(); // Destroy the existing chart
+  }
+  myChart =new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: time,
+      datasets: datasets
+    },
+    options: {
+      scales: {
+        x: { title: { display: true, text: 'Time (Minutes)' } },
+        y: {
+          title: { display: true, text: 'Glucose (mg/dl)' },
+          min: 140,
+          max: 240
+        }
+      },
+      animation: {
+        duration: 2000,
+        easing: 'easeInOutQuad'
+      }
+    }
+  });
+}
+// Add event listeners to input fields for real-time updates
+const inputs = document.querySelectorAll('input[type="number"], select');
+inputs.forEach(input => {
+  input.addEventListener('input', calculateAndPlot);
+});
+
+// Initial plot on page load
+calculateAndPlot();
+</script>
+
+</body>
+</html>
